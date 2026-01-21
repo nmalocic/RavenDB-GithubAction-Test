@@ -50,7 +50,8 @@ jobs:
             echo "Attempt $i/30 - waiting..."
             sleep 2
           done
-
+          sleep 30
+          
       - name: Check license
         run: |
           curl -s http://127.0.0.1:8081/license/status | jq .
