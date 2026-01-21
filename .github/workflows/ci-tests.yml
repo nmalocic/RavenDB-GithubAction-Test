@@ -23,6 +23,17 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
+      - name: Check if RAVEN_LICENSE secret is set
+        run: |
+          if [ -z "$RAVEN_LICENSE" ]; then
+            echo "::error::RAVEN_LICENSE secret is NOT set or is empty!"
+            exit 1
+          else
+            echo "RAVEN_LICENSE secret is set (length: ${#RAVEN_LICENSE} characters)"
+          fi
+        env:
+          RAVEN_LICENSE: ${{ secrets.RAVEN_LICENSE }}
+
       - name: Start RavenDB with Docker Compose
         run: docker compose up -d
         env:
