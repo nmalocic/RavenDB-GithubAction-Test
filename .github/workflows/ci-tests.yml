@@ -40,6 +40,10 @@ jobs:
             sleep 2
           done
 
+      - name: Check license
+        run: |
+          curl -s http://127.0.0.1:8081/license/status | jq .
+
       - name: Run Go tests
         run: go test -v ./...
 
