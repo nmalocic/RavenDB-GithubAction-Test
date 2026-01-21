@@ -1,0 +1,48 @@
+name: CI with Docker Compose and Go Tests
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Start RavenDB with Docker Compose
+        run: docker-compose up -d
+        env:
+          RAVEN_LICENSE: ${{ secrets.RAVEN_LICENSE }}
+
+      - name: Wait for RavenDB to be ready
+        run: |
+          echo "Waiting for RavenDB..."
+          for i in {1..30}; do
+            if curl -s http://127.0.0.1:8081/studio/index.html > /dev/null 2>&1; then
+              echo "RavenDB is ready!"
+              break
+            fi
+            echo "Attempt $i/30 - waiting..."
+            sleep 2
+          done
+
+      - name: Run Go tests
+        run: go test -v ./...
+
+      - name: Stop services
+        if: always()
+        run: docker-compose down
