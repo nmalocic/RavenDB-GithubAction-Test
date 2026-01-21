@@ -24,7 +24,7 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Start RavenDB with Docker Compose
-        run: docker-compose up -d
+        run: docker compose up -d
         env:
           RAVEN_LICENSE: ${{ secrets.RAVEN_LICENSE }}
 
@@ -45,4 +45,4 @@ jobs:
 
       - name: Stop services
         if: always()
-        run: docker-compose down
+        run: docker compose down
