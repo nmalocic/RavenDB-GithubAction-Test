@@ -49,22 +49,25 @@ func (r *RavenDB_Wrapper) initTTL(store *ravendb.DocumentStore) error {
 	return nil
 }
 
-func (r *RavenDB_Wrapper) setupDatabase(store *ravendb.DocumentStore) {
+func (r *RavenDB_Wrapper) setupDatabase(store *ravendb.DocumentStore) error {
 	operation := ravendb.NewGetDatabaseRecordOperation(dbName)
 	err := store.Maintenance().Server().Send(operation)
-	if err == nil {
-		if operation.Command != nil && operation.Command.RavenCommandBase.StatusCode == http.StatusNotFound {
-			databaseRecord := ravendb.DatabaseRecord{
-				DatabaseName: dbName,
-				Disabled:     false,
-			}
-			createOp := ravendb.NewCreateDatabaseOperation(&databaseRecord, 1)
-			err = store.Maintenance().Server().Send(createOp)
-			if err != nil {
-				return
-			}
+	if err != nil {
+		return fmt.Errorf("get database operation error %w", err)
+	}
+
+	if operation.Command != nil && operation.Command.RavenCommandBase.StatusCode == http.StatusNotFound {
+		databaseRecord := ravendb.DatabaseRecord{
+			DatabaseName: dbName,
+			Disabled:     false,
+		}
+		createOp := ravendb.NewCreateDatabaseOperation(&databaseRecord, 1)
+		err = store.Maintenance().Server().Send(createOp)
+		if err != nil {
+			return fmt.Errorf("get database operation error %w", err)
 		}
 	}
+	return nil
 }
 
 func (r *RavenDB_Wrapper) openSession(databaseName string) (*ravendb.DocumentStore, *ravendb.DocumentSession, error) {
