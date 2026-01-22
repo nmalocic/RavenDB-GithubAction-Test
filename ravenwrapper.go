@@ -3,6 +3,7 @@ package ravendbtest
 import (
 	"fmt"
 	ravendb "github.com/ravendb/ravendb-go-client"
+	"net/http"
 )
 
 var (
@@ -21,11 +22,13 @@ func (r *RavenDB_Wrapper) Init() (err error) {
 	if err != nil {
 		return err
 	}
-	r.documentStore = store
 
 	if err := r.initTTL(store); err != nil {
 		return fmt.Errorf("failed to initialize TTL: %w", err)
 	}
+
+	r.setupDatabase(store)
+	r.documentStore = store
 
 	return nil
 }
@@ -44,6 +47,24 @@ func (r *RavenDB_Wrapper) initTTL(store *ravendb.DocumentStore) error {
 		return fmt.Errorf("failed to send expiration operation: %w", err)
 	}
 	return nil
+}
+
+func (r *RavenDB_Wrapper) setupDatabase(store *ravendb.DocumentStore) {
+	operation := ravendb.NewGetDatabaseRecordOperation(dbName)
+	err := store.Maintenance().Server().Send(operation)
+	if err == nil {
+		if operation.Command != nil && operation.Command.RavenCommandBase.StatusCode == http.StatusNotFound {
+			databaseRecord := ravendb.DatabaseRecord{
+				DatabaseName: dbName,
+				Disabled:     false,
+			}
+			createOp := ravendb.NewCreateDatabaseOperation(&databaseRecord, 1)
+			err = store.Maintenance().Server().Send(createOp)
+			if err != nil {
+				return
+			}
+		}
+	}
 }
 
 func (r *RavenDB_Wrapper) openSession(databaseName string) (*ravendb.DocumentStore, *ravendb.DocumentSession, error) {
